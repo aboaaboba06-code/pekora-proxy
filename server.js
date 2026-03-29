@@ -1,44 +1,35 @@
-const express = require("express");
+app.get("/rap/:userId", async (req, res) => {
+	try {
+		const userId = req.params.userId;
 
-const app = express();
+		const url = `https://www.pekora.zip/internal/collectibles?userId=${userId}`;
 
-const RAP_DATA = {
-	6105: 858,
-	30728: 858
-};
-
-app.get("/", (req, res) => {
-	res.send("proxy alive");
-});
-
-app.get("/rap/:userId", (req, res) => {
-	const userId = String(req.params.userId || "").trim();
-
-	if (!/^\d+$/.test(userId)) {
-		return res.status(400).json({
-			success: false,
-			error: "Invalid userId"
+		const response = await axios.get(url, {
+			headers: {
+				"User-Agent": "Mozilla/5.0"
+			}
 		});
-	}
 
-	const rap = RAP_DATA[userId];
+		const html = response.data;
 
-	if (typeof rap !== "number") {
-		return res.status(404).json({
+		const match = html.match(/Total RAP:\s*(\d+)/);
+
+		if (match) {
+			return res.json({
+				success: true,
+				rap: parseInt(match[1])
+			});
+		}
+
+		return res.json({
 			success: false,
 			error: "RAP not found"
 		});
+
+	} catch (err) {
+		return res.status(500).json({
+			success: false,
+			error: err.message
+		});
 	}
-
-	return res.json({
-		success: true,
-		userId: Number(userId),
-		rap
-	});
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-	console.log("server started on port " + PORT);
 });
